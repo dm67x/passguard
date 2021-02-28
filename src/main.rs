@@ -1,6 +1,6 @@
+use database::User;
 use error::FailureKind;
 use rusqlite::NO_PARAMS;
-use database::User;
 
 mod database;
 mod error;

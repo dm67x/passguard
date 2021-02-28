@@ -16,8 +16,9 @@ pub struct Password {
     pub user_id: i32,
 }
 
-pub fn db_exec<F>(f: F) -> Result<(), FailureKind> 
-where F: Fn(Connection) -> Result<(), FailureKind>
+pub fn db_exec<F>(f: F) -> Result<(), FailureKind>
+where
+    F: Fn(Connection) -> Result<(), FailureKind>,
 {
     let conn = Connection::open("./passguard.db")?;
     conn.execute(
@@ -28,7 +29,8 @@ where F: Fn(Connection) -> Result<(), FailureKind>
                 password text not null
             )
         "#,
-        NO_PARAMS)?;
+        NO_PARAMS,
+    )?;
     conn.execute(
         r#"
             create table if not exists passwords (
@@ -39,6 +41,7 @@ where F: Fn(Connection) -> Result<(), FailureKind>
                 foreign key(user_id) references users(id)
             )
         "#,
-        NO_PARAMS)?;
+        NO_PARAMS,
+    )?;
     f(conn)
 }
