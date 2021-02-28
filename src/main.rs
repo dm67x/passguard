@@ -1,24 +1,30 @@
-use database::User;
-use error::FailureKind;
-use rusqlite::NO_PARAMS;
+extern crate r2d2;
+extern crate r2d2_sqlite;
+extern crate rusqlite;
+#[macro_use]
+extern crate lazy_static;
 
 mod database;
 mod error;
+mod model;
+
+use error::FailureKind;
+use model::User;
+use rusqlite::params;
+use simple_logger::SimpleLogger;
 
 fn main() -> Result<(), FailureKind> {
-    database::db_exec(|conn| {
-        let mut stmt = conn.prepare("SELECT * FROM users")?;
-        let users = stmt.query_map(NO_PARAMS, |row| {
-            Ok(User {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                password: row.get(2)?,
-            })
-        })?;
-        for user in users {
-            println!("Found user {:?}", user.unwrap());
-        }
-        Ok(())
+    SimpleLogger::new().init()?;
+    let pool = &*database::SQLITE;
+    let pool = pool.get()?;
+    let mut prepare = pool.prepare("SELECT * FROM users LIMIT 1")?;
+    let result: User = prepare.query_row(params![], |row| {
+        Ok(User {
+            id: row.get_unwrap(0),
+            name: row.get_unwrap(1),
+            password: row.get_unwrap(2),
+        })
     })?;
+    log::info!("Username: {:?}", result);
     Ok(())
 }
