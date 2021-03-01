@@ -13,11 +13,10 @@ lazy_static! {
 }
 
 fn init(pool: &Pool<SqliteConnectionManager>) -> Result<(), FailureKind> {
-    log::info!("Called");
     pool.get()?.execute(
         r#"
         create table if not exists users (
-            id integer primary key,
+            id text primary key,
             name text not null,
             password text not null
         )
@@ -27,10 +26,10 @@ fn init(pool: &Pool<SqliteConnectionManager>) -> Result<(), FailureKind> {
     pool.get()?.execute(
         r#"
         create table if not exists passwords (
-            id integer primary key,
+            id text primary key,
             website text not null,
             password text not null,
-            user_id id integer not null,
+            user_id text not null,
             foreign key(user_id) references users(id)
         )
         "#,
