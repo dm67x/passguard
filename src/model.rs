@@ -1,31 +1,32 @@
 use crate::{database, error::FailureKind};
 use rusqlite::params;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: String,
     pub name: String,
     pub password: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct Password {
-    pub id: String,
-    pub website: String,
-    pub password: String,
-    pub user_id: String,
-}
-
 impl User {
-    pub fn new(name: &str, password: &str) -> Result<Self, FailureKind> {
-        let uuid = Uuid::new_v4().to_string();
+    pub fn new(name: &str, password: &str) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            name: name.to_string(),
+            password: password.to_string(),
+        }
+    }
+
+    pub fn save(&self) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
+        pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
         pool.execute(
-            "INSERT INTO users VALUES (?1, ?2, ?3)",
-            params![uuid, name, password],
+            "INSERT INTO users VALUES(?1, ?2, ?3)",
+            params![self.id, self.name, self.password],
         )?;
-        User::find(&uuid)
+        Ok(self.clone())
     }
 
     pub fn destroy(&self) -> Result<(), FailureKind> {
@@ -34,68 +35,50 @@ impl User {
         Ok(())
     }
 
-    pub fn update(&self, name: &str, password: &str) -> Result<Self, FailureKind> {
+    pub fn find_by(id: &str) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
-        pool.execute(
-            "UPDATE users SET name = ?2, password = ?3 WHERE id = ?1",
-            params![self.id, name, password],
-        )?;
-        User::find(&self.id)
-    }
-
-    pub fn find(id: &str) -> Result<Self, FailureKind> {
-        let pool = database::get()?.get()?;
-        let user = pool.query_row("SELECT * from users WHERE id = ?1", params![id], |row| {
+        pool.query_row("SELECT * from users WHERE id = ?1", params![id], |row| {
             Ok(User {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 password: row.get(2)?,
             })
-        })?;
-        Ok(user)
-    }
-
-    pub fn passwords(&self) -> Result<Vec<Password>, FailureKind> {
-        let pool = database::get()?.get()?;
-        let mut req = pool.prepare("SELECT * FROM passwords WHERE user_id = ?1")?;
-        let passwords = req.query_map(params![self.id], |row| {
-            Ok(Password {
-                id: row.get(0)?,
-                website: row.get(1)?,
-                password: row.get(2)?,
-                user_id: row.get(3)?,
-            })
-        });
-
-        let mut results: Vec<Password> = vec![];
-        for password in passwords? {
-            results.push(password?);
-        }
-        Ok(results)
+        })
+        .map_err(|err| err.into())
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Password {
+    pub id: String,
+    pub website: String,
+    pub password: String,
+    pub user_id: Option<String>,
+}
+
 impl Password {
-    pub fn new(website: &str, password: &str, user_id: &str) -> Result<Self, FailureKind> {
-        let uuid = Uuid::new_v4().to_string();
+    pub fn new(website: &str, password: &str) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            website: website.to_string(),
+            password: password.to_string(),
+            user_id: None,
+        }
+    }
+
+    pub fn save(&self) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
+        pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
         pool.execute(
             "INSERT INTO passwords(id, website, password, user_id) VALUES (?1, ?2, ?3, ?4)",
-            params![uuid, website, password, user_id],
+            params![
+                self.id,
+                self.website,
+                self.password,
+                self.user_id.as_ref().unwrap_or(&"".to_string())
+            ],
         )?;
-        let password = pool.query_row(
-            "SELECT * from passwords WHERE id = ?1",
-            params![uuid],
-            |row| {
-                Ok(Password {
-                    id: row.get(0)?,
-                    website: row.get(1)?,
-                    password: row.get(2)?,
-                    user_id: row.get(3)?,
-                })
-            },
-        )?;
-        Ok(password)
+        Ok(self.clone())
     }
 
     pub fn destroy(&self) -> Result<(), FailureKind> {
@@ -104,24 +87,35 @@ impl Password {
         Ok(())
     }
 
-    pub fn update(&self, website: &str, password: &str) -> Result<Self, FailureKind> {
+    pub fn find_by(id: &str) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
-        pool.execute(
-            "UPDATE passwords SET website = ?2, password = ?3 WHERE id = ?1",
-            params![self.id, website, password],
-        )?;
-        let password = pool.query_row(
-            "SELECT * from passwords WHERE id = ?1",
-            params![self.id],
-            |row| {
+        let mut statement = pool.prepare("SELECT * FROM passwords WHERE id = ?1")?;
+        statement
+            .query_row(params![id], |row| {
                 Ok(Password {
                     id: row.get(0)?,
                     website: row.get(1)?,
                     password: row.get(2)?,
                     user_id: row.get(3)?,
                 })
-            },
-        )?;
-        Ok(password)
+            })
+            .map_err(|err| err.into())
+    }
+
+    pub fn match_all(user: &User, website: &str) -> Result<Vec<Self>, FailureKind> {
+        let pool = database::get()?.get()?;
+        let mut statement =
+            pool.prepare("SELECT * FROM passwords WHERE website = ?1 AND user_id = ?2")?;
+        let mut rows = statement.query(params![website, user.id])?;
+        let mut passwords = vec![];
+        while let Some(row) = rows.next()? {
+            passwords.push(Password {
+                id: row.get(0)?,
+                website: row.get(1)?,
+                password: row.get(2)?,
+                user_id: row.get(3)?,
+            });
+        }
+        Ok(passwords)
     }
 }
