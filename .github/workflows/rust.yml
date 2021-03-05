@@ -7,11 +7,10 @@ env:
   CARGO_TERM_COLOR: always
 jobs:
   test:
-    name: Build and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: rustup component add clippy
-      - working-directory: cd lib
-      - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo test --verbose
+      - name: Build and test
+        working-directory: cd lib
+        run: cargo clippy --all-targets --all-features -- -D warnings && cargo test --verbose
