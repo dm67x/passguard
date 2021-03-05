@@ -12,5 +12,5 @@ jobs:
       - uses: actions/checkout@v2
       - run: rustup component add clippy
       - name: Build and test
-        working-directory: cd lib
+        working-directory: lib
         run: cargo clippy --all-targets --all-features -- -D warnings && cargo test --verbose
