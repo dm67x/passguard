@@ -6,9 +6,9 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallParams {
-    method_name: String,
-    user: Option<User>,
-    password: Option<Password>,
+    pub method_name: String,
+    pub user: Option<User>,
+    pub password: Option<Password>,
 }
 
 pub fn call_api(params: CallParams) -> Result<Value, Value> {
