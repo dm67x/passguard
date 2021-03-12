@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, sync::PoisonError};
+use std::sync::PoisonError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FailureKind {
@@ -12,22 +12,6 @@ pub enum FailureKind {
     NotRecognizedEntryPoint,
     InvalidData(String),
     IoError(String),
-}
-
-impl Display for FailureKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::SqliteError(err) => write!(f, "Sqlite error: {}", err),
-            Self::R2d2Error(err) => write!(f, "R2d2Error error: {}", err),
-            Self::LoggerError(err) => write!(f, "Logger error: {}", err),
-            Self::PoisonError(err) => write!(f, "Poison error: {}", err),
-            Self::EncryptionError(err) => write!(f, "Encryption error: {}", err),
-            Self::FormatError(err) => write!(f, "Format error: {}", err),
-            Self::IoError(err) => write!(f, "IO Error: {}", err),
-            Self::NotRecognizedEntryPoint => write!(f, "Entrypoint not recognized"),
-            Self::InvalidData(err) => write!(f, "Invalid Data: {}", err),
-        }
-    }
 }
 
 impl From<rusqlite::Error> for FailureKind {

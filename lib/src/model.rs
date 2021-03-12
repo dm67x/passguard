@@ -3,6 +3,12 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub trait Model {
+    fn save(&self) -> Result<Self, FailureKind>
+    where
+        Self: Sized;
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: String,
@@ -17,16 +23,6 @@ impl User {
             name: name.to_string(),
             password: password.to_string(),
         }
-    }
-
-    pub fn save(&self) -> Result<Self, FailureKind> {
-        let pool = database::get()?.get()?;
-        pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
-        pool.execute(
-            "INSERT INTO users VALUES(?1, ?2, ?3)",
-            params![self.id, self.name, self.password],
-        )?;
-        Ok(self.clone())
     }
 
     pub fn destroy(&self) -> Result<(), FailureKind> {
@@ -48,6 +44,18 @@ impl User {
     }
 }
 
+impl Model for User {
+    fn save(&self) -> Result<Self, FailureKind> {
+        let pool = database::get()?.get()?;
+        pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
+        pool.execute(
+            "INSERT INTO users VALUES(?1, ?2, ?3)",
+            params![self.id, self.name, self.password],
+        )?;
+        Ok(self.clone())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Password {
     pub id: String,
@@ -64,21 +72,6 @@ impl Password {
             password: password.to_string(),
             user_id: None,
         }
-    }
-
-    pub fn save(&self) -> Result<Self, FailureKind> {
-        let pool = database::get()?.get()?;
-        pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
-        pool.execute(
-            "INSERT INTO passwords(id, website, password, user_id) VALUES (?1, ?2, ?3, ?4)",
-            params![
-                self.id,
-                self.website,
-                self.password,
-                self.user_id.as_ref().unwrap_or(&"".to_string())
-            ],
-        )?;
-        Ok(self.clone())
     }
 
     pub fn destroy(&self) -> Result<(), FailureKind> {
@@ -117,5 +110,22 @@ impl Password {
             });
         }
         Ok(passwords)
+    }
+}
+
+impl Model for Password {
+    fn save(&self) -> Result<Self, FailureKind> {
+        let pool = database::get()?.get()?;
+        pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
+        pool.execute(
+            "INSERT INTO passwords(id, website, password, user_id) VALUES (?1, ?2, ?3, ?4)",
+            params![
+                self.id,
+                self.website,
+                self.password,
+                self.user_id.as_ref().unwrap_or(&"".to_string())
+            ],
+        )?;
+        Ok(self.clone())
     }
 }
