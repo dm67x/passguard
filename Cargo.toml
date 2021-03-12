@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "lib",
+    "ui/src-tauri"
+]

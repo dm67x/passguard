@@ -43,6 +43,8 @@ fn get_session() -> Option<String> {
     None
 }
 
+/// # Safety
+/// Be careful, if an empty pointer is given to the function
 #[no_mangle]
 pub unsafe extern "C" fn create_user(name: *const c_char, password: *const c_char) -> c_int {
     set_session(None);
@@ -61,6 +63,8 @@ pub unsafe extern "C" fn create_user(name: *const c_char, password: *const c_cha
         .unwrap_or(1i32)
 }
 
+/// # Safety
+/// Be careful, if an empty pointer is given to the function
 #[no_mangle]
 pub unsafe extern "C" fn delete_user(name: *const c_char) -> c_int {
     let name = CStr::from_ptr(name)
@@ -70,10 +74,8 @@ pub unsafe extern "C" fn delete_user(name: *const c_char) -> c_int {
         .map(|session| User::find_by(session.as_str()))
         .and_then(|user| match user {
             Ok(user) => {
-                if user.name == name {
-                    if let Ok(_) = user.destroy() {
-                        return Some(0i32);
-                    }
+                if user.name == name && user.destroy().is_ok() {
+                    return Some(0i32);
                 }
                 None
             }
