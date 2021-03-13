@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::PoisonError;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum FailureKind {
+pub(crate) enum FailureKind {
     SqliteError(String),
     R2d2Error(String),
     LoggerError(String),

@@ -3,21 +3,21 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub trait Model {
+pub(crate) trait Model {
     fn save(&self) -> Result<Self, FailureKind>
     where
         Self: Sized;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct User {
+pub(crate) struct User {
     pub id: String,
     pub name: String,
     pub password: String,
 }
 
 impl User {
-    pub fn new(name: &str, password: &str) -> Self {
+    pub(crate) fn new(name: &str, password: &str) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             name: name.to_string(),
@@ -25,13 +25,13 @@ impl User {
         }
     }
 
-    pub fn destroy(&self) -> Result<(), FailureKind> {
+    pub(crate) fn destroy(&self) -> Result<(), FailureKind> {
         let pool = database::get()?.get()?;
         pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
         Ok(())
     }
 
-    pub fn find_by(id: &str) -> Result<Self, FailureKind> {
+    pub(crate) fn find_by(id: &str) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
         pool.query_row("SELECT * from users WHERE id = ?1", params![id], |row| {
             Ok(User {
@@ -57,7 +57,7 @@ impl Model for User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Password {
+pub(crate) struct Password {
     pub id: String,
     pub website: String,
     pub password: String,
@@ -65,7 +65,7 @@ pub struct Password {
 }
 
 impl Password {
-    pub fn new(website: &str, password: &str) -> Self {
+    pub(crate) fn new(website: &str, password: &str) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             website: website.to_string(),
@@ -74,13 +74,13 @@ impl Password {
         }
     }
 
-    pub fn destroy(&self) -> Result<(), FailureKind> {
+    pub(crate) fn destroy(&self) -> Result<(), FailureKind> {
         let pool = database::get()?.get()?;
         pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
         Ok(())
     }
 
-    pub fn find_by(id: &str) -> Result<Self, FailureKind> {
+    pub(crate) fn find_by(id: &str) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
         let mut statement = pool.prepare("SELECT * FROM passwords WHERE id = ?1")?;
         statement
@@ -95,7 +95,7 @@ impl Password {
             .map_err(|err| err.into())
     }
 
-    pub fn match_all(user: &User, website: &str) -> Result<Vec<Self>, FailureKind> {
+    pub(crate) fn match_all(user: &User, website: &str) -> Result<Vec<Self>, FailureKind> {
         let pool = database::get()?.get()?;
         let mut statement =
             pool.prepare("SELECT * FROM passwords WHERE website = ?1 AND user_id = ?2")?;

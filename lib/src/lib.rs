@@ -8,8 +8,7 @@ extern crate hex;
 extern crate sha2;
 
 use model::{Model, User};
-use std::os::raw::{c_char, c_int};
-use std::{ffi::CStr, sync::Mutex};
+use std::sync::Mutex;
 
 mod database;
 mod encrypt;
@@ -43,44 +42,29 @@ fn get_session() -> Option<String> {
     None
 }
 
-/// # Safety
-/// Be careful, if an empty pointer is given to the function
-#[no_mangle]
-pub unsafe extern "C" fn create_user(name: *const c_char, password: *const c_char) -> c_int {
+pub fn create_user(name: &str, password: &str) -> bool {
     set_session(None);
-    let name = CStr::from_ptr(name)
-        .to_str()
-        .expect("create_user failed to cast to str");
-    let password = CStr::from_ptr(password)
-        .to_str()
-        .expect("create_user failed to cast to str");
     encrypt::hash(password)
         .map(|password| User::new(name, password.as_str()))
         .map(|user| user.save())
         .and_then(|user| user)
         .map(|user| set_session(Some(user.id)))
-        .map(|_| 0i32)
-        .unwrap_or(1i32)
+        .map(|_| true)
+        .unwrap_or(false)
 }
 
-/// # Safety
-/// Be careful, if an empty pointer is given to the function
-#[no_mangle]
-pub unsafe extern "C" fn delete_user(name: *const c_char) -> c_int {
-    let name = CStr::from_ptr(name)
-        .to_str()
-        .expect("delete_user failed to cast to str");
+pub fn delete_user(name: &str) -> bool {
     get_session()
         .map(|session| User::find_by(session.as_str()))
         .and_then(|user| match user {
             Ok(user) => {
                 if user.name == name && user.destroy().is_ok() {
-                    return Some(0i32);
+                    return Some(true);
                 }
                 None
             }
             Err(_) => None,
         })
-        .map(|_| 0i32)
-        .unwrap_or(1i32)
+        .map(|_| true)
+        .unwrap_or(false)
 }

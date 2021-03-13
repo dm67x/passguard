@@ -38,7 +38,7 @@ fn init(pool: &Pool<SqliteConnectionManager>) -> Result<(), FailureKind> {
     Ok(())
 }
 
-pub fn get() -> Result<&'static Pool<SqliteConnectionManager>, FailureKind> {
+pub(crate) fn get() -> Result<&'static Pool<SqliteConnectionManager>, FailureKind> {
     let pool = &*SQLITE;
     let initialized = INITIALIZED.swap(true, Ordering::SeqCst);
     if !initialized {
