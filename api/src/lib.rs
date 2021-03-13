@@ -57,6 +57,11 @@ pub fn signin(name: &str, password: &str) -> serde_json::Value {
         .unwrap_or(json!(false))
 }
 
+pub fn signout() -> serde_json::Value {
+    set_session(None);
+    json!(true)
+}
+
 pub fn create_user(username: &str, password: &str) -> serde_json::Value {
     User::new(username, encrypt::hash(password).as_str())
         .save()

@@ -1616,6 +1616,8 @@ dependencies = [
  "imgui-glium-renderer",
  "imgui-winit-support",
  "passguard",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
