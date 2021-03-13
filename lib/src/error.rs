@@ -9,9 +9,9 @@ pub(crate) enum FailureKind {
     PoisonError(String),
     EncryptionError(String),
     FormatError(String),
-    NotRecognizedEntryPoint,
     InvalidData(String),
     IoError(String),
+    NotAuthorized,
 }
 
 impl From<rusqlite::Error> for FailureKind {

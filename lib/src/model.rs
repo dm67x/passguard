@@ -11,35 +11,39 @@ pub(crate) trait Model {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct User {
-    pub id: String,
-    pub name: String,
+    pub username: String,
     pub password: String,
 }
 
 impl User {
-    pub(crate) fn new(name: &str, password: &str) -> Self {
+    pub(crate) fn new(username: &str, password: &str) -> Self {
         Self {
-            id: Uuid::new_v4().to_string(),
-            name: name.to_string(),
+            username: username.to_string(),
             password: password.to_string(),
         }
     }
 
     pub(crate) fn destroy(&self) -> Result<(), FailureKind> {
         let pool = database::get()?.get()?;
-        pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
+        pool.execute(
+            "DELETE FROM users WHERE username = ?1",
+            params![self.username],
+        )?;
         Ok(())
     }
 
-    pub(crate) fn find_by(id: &str) -> Result<Self, FailureKind> {
+    pub(crate) fn find_by(username: &str) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
-        pool.query_row("SELECT * from users WHERE id = ?1", params![id], |row| {
-            Ok(User {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                password: row.get(2)?,
-            })
-        })
+        pool.query_row(
+            "SELECT * from users WHERE username = ?1",
+            params![username],
+            |row| {
+                Ok(User {
+                    username: row.get(0)?,
+                    password: row.get(1)?,
+                })
+            },
+        )
         .map_err(|err| err.into())
     }
 }
@@ -47,10 +51,13 @@ impl User {
 impl Model for User {
     fn save(&self) -> Result<Self, FailureKind> {
         let pool = database::get()?.get()?;
-        pool.execute("DELETE FROM users WHERE id = ?1", params![self.id])?;
         pool.execute(
-            "INSERT INTO users VALUES(?1, ?2, ?3)",
-            params![self.id, self.name, self.password],
+            "DELETE FROM users WHERE username = ?1",
+            params![self.username],
+        )?;
+        pool.execute(
+            "INSERT INTO users VALUES(?1, ?2)",
+            params![self.username, self.password],
         )?;
         Ok(self.clone())
     }
@@ -59,18 +66,18 @@ impl Model for User {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Password {
     pub id: String,
-    pub website: String,
+    pub url: String,
     pub password: String,
-    pub user_id: Option<String>,
+    pub user_id: String,
 }
 
 impl Password {
-    pub(crate) fn new(website: &str, password: &str) -> Self {
+    pub(crate) fn new(user: &User, url: &str, password: &str) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
-            website: website.to_string(),
+            url: url.to_string(),
             password: password.to_string(),
-            user_id: None,
+            user_id: user.username.to_string(),
         }
     }
 
@@ -87,7 +94,7 @@ impl Password {
             .query_row(params![id], |row| {
                 Ok(Password {
                     id: row.get(0)?,
-                    website: row.get(1)?,
+                    url: row.get(1)?,
                     password: row.get(2)?,
                     user_id: row.get(3)?,
                 })
@@ -95,16 +102,15 @@ impl Password {
             .map_err(|err| err.into())
     }
 
-    pub(crate) fn match_all(user: &User, website: &str) -> Result<Vec<Self>, FailureKind> {
+    pub(crate) fn get_all(user: &User) -> Result<Vec<Self>, FailureKind> {
         let pool = database::get()?.get()?;
-        let mut statement =
-            pool.prepare("SELECT * FROM passwords WHERE website = ?1 AND user_id = ?2")?;
-        let mut rows = statement.query(params![website, user.id])?;
+        let mut statement = pool.prepare("SELECT * FROM passwords WHERE user_id = ?1")?;
+        let mut rows = statement.query(params![user.username])?;
         let mut passwords = vec![];
         while let Some(row) = rows.next()? {
             passwords.push(Password {
                 id: row.get(0)?,
-                website: row.get(1)?,
+                url: row.get(1)?,
                 password: row.get(2)?,
                 user_id: row.get(3)?,
             });
@@ -118,13 +124,8 @@ impl Model for Password {
         let pool = database::get()?.get()?;
         pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
         pool.execute(
-            "INSERT INTO passwords(id, website, password, user_id) VALUES (?1, ?2, ?3, ?4)",
-            params![
-                self.id,
-                self.website,
-                self.password,
-                self.user_id.as_ref().unwrap_or(&"".to_string())
-            ],
+            "INSERT INTO passwords(id, url, password, user_id) VALUES (?1, ?2, ?3, ?4)",
+            params![self.id, self.url, self.password, self.user_id],
         )?;
         Ok(self.clone())
     }

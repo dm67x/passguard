@@ -1,4 +1,5 @@
 use crate::error::FailureKind;
+use lazy_static::lazy_static;
 use r2d2::Pool;
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
@@ -16,8 +17,7 @@ fn init(pool: &Pool<SqliteConnectionManager>) -> Result<(), FailureKind> {
     pool.get()?.execute(
         r#"
         create table if not exists users (
-            id text primary key,
-            name text not null,
+            username text not null primary key,
             password text not null
         )
         "#,
@@ -27,10 +27,10 @@ fn init(pool: &Pool<SqliteConnectionManager>) -> Result<(), FailureKind> {
         r#"
         create table if not exists passwords (
             id text primary key,
-            website text not null,
+            url text not null,
             password text not null,
             user_id text not null,
-            foreign key(user_id) references users(id)
+            foreign key(user_id) references users(username)
         )
         "#,
         params![],
