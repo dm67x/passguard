@@ -48,7 +48,7 @@ pub fn signin(name: &str, password: &str) -> serde_json::Value {
     User::find_by(name)
         .map(|user| {
             if user.password == encrypt::hash(password) {
-                set_session(Some(user.username.to_string()));
+                set_session(Some(user.username));
                 json!(true)
             } else {
                 json!(false)
@@ -65,7 +65,7 @@ pub fn create_user(username: &str, password: &str) -> serde_json::Value {
             set_session(Some(user.username.clone()));
             json!(user.clone())
         })
-        .unwrap_or(json!({}))
+        .unwrap_or_else(|_| json!({}))
 }
 
 pub fn delete_user(username: &str) -> serde_json::Value {
@@ -96,7 +96,7 @@ pub fn get_passwords() -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::get_all(&user)
             .map(|passwords| json!(passwords))
-            .unwrap_or(json!(Vec::<Password>::new())),
+            .unwrap_or_else(|_| json!(Vec::<Password>::new())),
         None => json!(Vec::<Password>::new()),
     }
 }
@@ -105,7 +105,7 @@ pub fn decrypt_password(id: &str) -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::find_by(id)
             .map(|password| json!(encrypt::decrypt(&user, password.password.as_str())))
-            .unwrap_or(json!(FailureKind::NotAuthorized)),
+            .unwrap_or_else(|_| json!(FailureKind::NotAuthorized)),
         None => json!(FailureKind::NotAuthorized),
     }
 }
