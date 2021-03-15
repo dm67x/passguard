@@ -1,5 +1,5 @@
 [package]
-name = "passguard"
+name = "passguard_api"
 version = "0.1.0"
 authors = ["dm67x <dm67x@outlook.fr>"]
 edition = "2018"
@@ -12,7 +12,7 @@ default-features = false # Disable features which are enabled by default
 features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
 
 [lib]
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 log = "0.4"
@@ -26,7 +26,6 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 magic-crypt = "3.1.6"
 sha2 = "0.9.3"
 hex = "0.4.2"
-tokio = { version = "1", features = ["full"] }
 
 [dependencies.rusqlite]
 version = "0.24.2"

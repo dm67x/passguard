@@ -2,12 +2,68 @@ use error::FailureKind;
 use lazy_static::lazy_static;
 use model::{Model, Password, User};
 use serde_json::json;
-use std::sync::Mutex;
+use std::{
+    ffi::{c_void, CStr, CString},
+    os::raw::c_char,
+    sync::{Mutex, Once},
+};
 
 mod database;
 mod encrypt;
 mod error;
 mod model;
+
+lazy_static! {
+    static ref CURRENT_SESSION: Mutex<Session> = Mutex::new(Session::default());
+    static ref INITIALIZE_LOGGER: Once = Once::new();
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct Parameters {
+    method_name: *const c_char,
+    username: *const c_char,
+    password: *const c_char,
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
+    //INITIALIZE_LOGGER.call_once(|| simple_logger::SimpleLogger::new().init().unwrap());
+    CStr::from_ptr((*params).method_name)
+        .to_str()
+        .map(|method_name| {
+            println!("Entrypoint entering with {}", method_name);
+            match method_name {
+                "createUser" => {
+                    let username = CStr::from_ptr((*params).username)
+                        .to_str()
+                        .map_or("", |name| name);
+                    let password = CStr::from_ptr((*params).password)
+                        .to_str()
+                        .map_or("", |password| password);
+
+                    if username.is_empty() || password.is_empty() {
+                        value_to_ptr(None)
+                    } else {
+                        value_to_ptr(Some(create_user(username, password)))
+                    }
+                }
+                _ => value_to_ptr(None),
+            }
+        })
+        .unwrap_or(value_to_ptr(None))
+}
+
+fn value_to_ptr(value: Option<serde_json::Value>) -> *mut c_void {
+    value
+        .map(|value| {
+            let value = value.as_str().map(|value| value).unwrap_or("");
+            CString::new(value)
+                .map(|value| value.into_raw())
+                .unwrap_or(std::ptr::null_mut())
+        })
+        .unwrap_or(std::ptr::null_mut()) as *mut c_void
+}
 
 struct Session {
     id: Option<String>,
@@ -17,10 +73,6 @@ impl Default for Session {
     fn default() -> Self {
         Self { id: None }
     }
-}
-
-lazy_static! {
-    static ref CURRENT_SESSION: Mutex<Session> = Mutex::new(Session::default());
 }
 
 fn set_session(id: Option<String>) {
@@ -43,7 +95,7 @@ fn get_user_by_session() -> Option<User> {
         .unwrap_or(None)
 }
 
-pub fn signin(name: &str, password: &str) -> serde_json::Value {
+fn signin(name: &str, password: &str) -> serde_json::Value {
     set_session(None);
     User::find_by(name)
         .map(|user| {
@@ -57,12 +109,12 @@ pub fn signin(name: &str, password: &str) -> serde_json::Value {
         .unwrap_or(json!(false))
 }
 
-pub fn signout() -> serde_json::Value {
+fn signout() -> serde_json::Value {
     set_session(None);
     json!(true)
 }
 
-pub fn create_user(username: &str, password: &str) -> serde_json::Value {
+fn create_user(username: &str, password: &str) -> serde_json::Value {
     User::new(username, encrypt::hash(password).as_str())
         .save()
         .map_err(|err| json!(err))
@@ -73,13 +125,13 @@ pub fn create_user(username: &str, password: &str) -> serde_json::Value {
         .unwrap_or_else(|_| json!({}))
 }
 
-pub fn delete_user(username: &str) -> serde_json::Value {
+fn delete_user(username: &str) -> serde_json::Value {
     get_user_by_session()
         .map(|user| json!(user.username == username && user.destroy().is_ok()))
         .unwrap_or(json!(false))
 }
 
-pub fn create_password(url: &str, password: &str) -> serde_json::Value {
+fn create_password(url: &str, password: &str) -> serde_json::Value {
     get_user_by_session()
         .map(|user| (user.clone(), encrypt::encrypt(&user, password)))
         .map(|(ref user, password)| {
@@ -88,7 +140,7 @@ pub fn create_password(url: &str, password: &str) -> serde_json::Value {
         .unwrap_or(json!(false))
 }
 
-pub fn delete_password(id: &str) -> serde_json::Value {
+fn delete_password(id: &str) -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::find_by(id)
             .map(|password| json!(user.username == password.user_id && password.destroy().is_ok()))
@@ -97,7 +149,7 @@ pub fn delete_password(id: &str) -> serde_json::Value {
     }
 }
 
-pub fn get_passwords() -> serde_json::Value {
+fn get_passwords() -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::get_all(&user)
             .map(|passwords| json!(passwords))
@@ -106,7 +158,7 @@ pub fn get_passwords() -> serde_json::Value {
     }
 }
 
-pub fn decrypt_password(id: &str) -> serde_json::Value {
+fn decrypt_password(id: &str) -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::find_by(id)
             .map(|password| json!(encrypt::decrypt(&user, password.password.as_str())))
