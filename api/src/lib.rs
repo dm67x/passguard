@@ -28,11 +28,11 @@ pub struct Parameters {
 
 #[no_mangle]
 pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
-    //INITIALIZE_LOGGER.call_once(|| simple_logger::SimpleLogger::new().init().unwrap());
+    INITIALIZE_LOGGER.call_once(|| simple_logger::SimpleLogger::new().init().unwrap());
     CStr::from_ptr((*params).method_name)
         .to_str()
         .map(|method_name| {
-            println!("Entrypoint entering with {}", method_name);
+            log::info!("Entrypoint entering with {}", method_name);
             match method_name {
                 "createUser" => {
                     let username = CStr::from_ptr((*params).username)
@@ -57,7 +57,7 @@ pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
 fn value_to_ptr(value: Option<serde_json::Value>) -> *mut c_void {
     value
         .map(|value| {
-            let value = value.as_str().map(|value| value).unwrap_or("");
+            let value = serde_json::to_string(&value).map_or("".to_owned(), |value| value);
             CString::new(value)
                 .map(|value| value.into_raw())
                 .unwrap_or(std::ptr::null_mut())

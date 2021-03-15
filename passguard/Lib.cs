@@ -26,6 +26,6 @@ public class Lib
         IntPtr newParameters = Marshal.AllocHGlobal(Marshal.SizeOf<Parameters>());
         Marshal.StructureToPtr<Parameters>(parameters, newParameters, false);
         IntPtr response = CallApi(newParameters);
-        return Marshal.PtrToStringAuto(response);
+        return Marshal.PtrToStringAnsi(response);
     }
 }
