@@ -12,6 +12,8 @@ pub(crate) enum FailureKind {
     InvalidData(String),
     IoError(String),
     NotAuthorized,
+    UnknownEntrypoint,
+    Unknown(String),
 }
 
 impl From<rusqlite::Error> for FailureKind {

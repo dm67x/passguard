@@ -22,8 +22,8 @@ lazy_static! {
 #[derive(Debug)]
 pub struct Parameters {
     method_name: *const c_char,
-    username: *const c_char,
-    password: *const c_char,
+    param1: *const c_char,
+    param2: *const c_char,
 }
 
 #[no_mangle]
@@ -33,36 +33,38 @@ pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
         .to_str()
         .map(|method_name| {
             log::info!("Entrypoint entering with {}", method_name);
-            match method_name {
-                "createUser" => {
-                    let username = CStr::from_ptr((*params).username)
-                        .to_str()
-                        .map_or("", |name| name);
-                    let password = CStr::from_ptr((*params).password)
-                        .to_str()
-                        .map_or("", |password| password);
+            let param1 = CStr::from_ptr((*params).param1)
+                .to_str()
+                .map_or("", |param| param);
+            let param2 = CStr::from_ptr((*params).param2)
+                .to_str()
+                .map_or("", |param| param);
 
-                    if username.is_empty() || password.is_empty() {
-                        value_to_ptr(None)
-                    } else {
-                        value_to_ptr(Some(create_user(username, password)))
-                    }
-                }
-                _ => value_to_ptr(None),
+            match method_name {
+                "signin" => to_ptr(|| signin(param1.clone(), param2.clone())),
+                "signout" => to_ptr(signout),
+                "createUser" => to_ptr(|| create_user(param1.clone(), param2.clone())),
+                "deleteUser" => to_ptr(|| delete_user(param1.clone())),
+                "createPassword" => to_ptr(|| create_password(param1.clone(), param2.clone())),
+                "deletePassword" => to_ptr(|| delete_password(param1.clone())),
+                "getPasswords" => to_ptr(get_passwords),
+                "decrypt" => to_ptr(|| decrypt_password(param1.clone())),
+                _ => to_ptr(|| json!(FailureKind::UnknownEntrypoint)),
             }
         })
-        .unwrap_or(value_to_ptr(None))
+        .unwrap_or(to_ptr(|| {
+            json!(FailureKind::Unknown("Parsing error".to_owned()))
+        }))
 }
 
-fn value_to_ptr(value: Option<serde_json::Value>) -> *mut c_void {
-    value
-        .map(|value| {
-            let value = serde_json::to_string(&value).map_or("".to_owned(), |value| value);
-            CString::new(value)
-                .map(|value| value.into_raw())
-                .unwrap_or(std::ptr::null_mut())
-        })
-        .unwrap_or(std::ptr::null_mut()) as *mut c_void
+fn to_ptr<F>(call: F) -> *mut c_void
+where
+    F: Fn() -> serde_json::Value,
+{
+    serde_json::to_string(&call())
+        .map(|value| CString::new(value).unwrap())
+        .map(|value| value.into_raw() as *mut c_void)
+        .unwrap_or(std::ptr::null_mut())
 }
 
 struct Session {
