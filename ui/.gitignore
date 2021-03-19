@@ -87,3 +87,6 @@ typings/
 
 # Electron-Forge
 out/
+
+passguard.db
+passguard_api.dll

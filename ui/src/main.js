@@ -1,5 +1,5 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
+const { app, BrowserWindow, ipcMain } = require('electron')
+const path = require('path')
 const lib = require('./lib')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -14,18 +14,16 @@ const createWindow = () => {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-    },
+      contextIsolation: false,
+      enableRemoteModule: true,
+    }
   });
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-
-  // load lib
-  console.log(lib.call({ methodName: "createUser", param1: "admin", param2: "test" }))
-  console.log(lib.call({ methodName: "signin", param1: "admin", param2: "test" }))
+  //mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
@@ -52,3 +50,10 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+ipcMain.on('signin', (event, arg) => {
+  event.reply('signin-response', lib.call({
+    methodName: 'signin',
+    param1: arg.username || '',
+    param2: arg.password || ''
+  }))
+})

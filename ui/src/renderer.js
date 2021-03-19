@@ -26,6 +26,19 @@
  * ```
  */
 
-import './index.css';
+import { render } from 'react-dom'
+import React from 'react'
+import WelcomeForm from './components/WelcomeForm'
+import Container from '@material-ui/core/Container'
+import '@fontsource/roboto'
+import './index.css'
 
-console.log('👋 This message is being logged by "renderer.js", included via webpack');
+const App = () => {
+    return (
+        <Container maxWidth="sm">
+            <WelcomeForm />
+        </Container>
+    )
+}
+
+render(<App />, document.getElementById("root"))
