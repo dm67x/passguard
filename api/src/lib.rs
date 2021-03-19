@@ -26,6 +26,9 @@ pub struct Parameters {
     param2: *const c_char,
 }
 
+/// # Safety
+///
+/// The function needs to have three parameters pass to him when called
 #[no_mangle]
 pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
     INITIALIZE_LOGGER.call_once(|| simple_logger::SimpleLogger::new().init().unwrap());
@@ -41,20 +44,18 @@ pub unsafe extern "C" fn entrypoint(params: *const Parameters) -> *mut c_void {
                 .map_or("", |param| param);
 
             match method_name {
-                "signin" => to_ptr(|| signin(param1.clone(), param2.clone())),
+                "signin" => to_ptr(|| signin(param1, param2)),
                 "signout" => to_ptr(signout),
-                "createUser" => to_ptr(|| create_user(param1.clone(), param2.clone())),
-                "deleteUser" => to_ptr(|| delete_user(param1.clone())),
-                "createPassword" => to_ptr(|| create_password(param1.clone(), param2.clone())),
-                "deletePassword" => to_ptr(|| delete_password(param1.clone())),
+                "createUser" => to_ptr(|| create_user(param1, param2)),
+                "deleteUser" => to_ptr(|| delete_user(param1)),
+                "createPassword" => to_ptr(|| create_password(param1, param2)),
+                "deletePassword" => to_ptr(|| delete_password(param1)),
                 "getPasswords" => to_ptr(get_passwords),
-                "decrypt" => to_ptr(|| decrypt_password(param1.clone())),
+                "decrypt" => to_ptr(|| decrypt_password(param1)),
                 _ => to_ptr(|| json!(FailureKind::UnknownEntrypoint)),
             }
         })
-        .unwrap_or(to_ptr(|| {
-            json!(FailureKind::Unknown("Parsing error".to_owned()))
-        }))
+        .unwrap_or_else(|_| to_ptr(|| json!(FailureKind::Unknown("Parsing error".to_owned()))))
 }
 
 fn to_ptr<F>(call: F) -> *mut c_void
@@ -64,7 +65,7 @@ where
     serde_json::to_string(&call())
         .map(|value| CString::new(value).unwrap())
         .map(|value| value.into_raw() as *mut c_void)
-        .unwrap_or(std::ptr::null_mut())
+        .unwrap_or_else(|_| std::ptr::null_mut())
 }
 
 struct Session {
@@ -108,7 +109,7 @@ fn signin(name: &str, password: &str) -> serde_json::Value {
                 json!(false)
             }
         })
-        .unwrap_or(json!(false))
+        .unwrap_or_else(|_| json!(false))
 }
 
 fn signout() -> serde_json::Value {
@@ -130,7 +131,7 @@ fn create_user(username: &str, password: &str) -> serde_json::Value {
 fn delete_user(username: &str) -> serde_json::Value {
     get_user_by_session()
         .map(|user| json!(user.username == username && user.destroy().is_ok()))
-        .unwrap_or(json!(false))
+        .unwrap_or_else(|| json!(false))
 }
 
 fn create_password(url: &str, password: &str) -> serde_json::Value {
@@ -139,14 +140,14 @@ fn create_password(url: &str, password: &str) -> serde_json::Value {
         .map(|(ref user, password)| {
             json!(Password::new(user, url, password.as_str()).save().is_ok())
         })
-        .unwrap_or(json!(false))
+        .unwrap_or_else(|| json!(false))
 }
 
 fn delete_password(id: &str) -> serde_json::Value {
     match get_user_by_session() {
         Some(user) => Password::find_by(id)
             .map(|password| json!(user.username == password.user_id && password.destroy().is_ok()))
-            .unwrap_or(json!(false)),
+            .unwrap_or_else(|_| json!(false)),
         None => json!(false),
     }
 }
