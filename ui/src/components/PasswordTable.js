@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { List, Grid, TextField, Button, ButtonGroup, DialogTitle, Dialog, DialogContent, DialogActions, DialogContentText } from '@material-ui/core'
+import { List, Paper, TextField, Button, ButtonGroup, DialogTitle, Dialog, DialogContent, DialogActions, DialogContentText } from '@material-ui/core'
 import PasswordRow from './PasswordRow'
 import AddIcon from '@material-ui/icons/Add'
 import CloseIcon from '@material-ui/icons/Close'
 import { ipcRenderer } from 'electron'
+import Profile from './Profile'
 
 const AddNewPasswordDialog = (props) => {
     const [open, setOpen] = useState(true)
@@ -35,7 +36,7 @@ const AddNewPasswordDialog = (props) => {
     }
 
     return (
-        <Dialog onClose={() => { setOpen(false); onClose() }} aria-labelledby="simple-dialog-title" open={open}>
+        <Dialog onClose={() => { setOpen(false); onClose() }} open={open}>
             <DialogTitle>Add a new password</DialogTitle>
             <DialogContent>
                 <DialogContentText>
@@ -57,9 +58,31 @@ const AddNewPasswordDialog = (props) => {
     )
 }
 
+const PasswordDialog = (props) => {
+    const [open, setOpen] = useState(true)
+    const { onClose, url, password } = props
+
+    return (
+        <Dialog onClose={() => { setOpen(false); onClose() }} open={open}>
+            <DialogTitle>The password is...</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    <b style={{ color: 'red' }}>{password}</b>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button color="secondary" onClick={() => { setOpen(false); onClose() }}>
+                    Close <CloseIcon />
+                </Button>
+            </DialogActions>
+        </Dialog>
+    )
+}
+
 const PasswordTable = () => {
     const [passwords, setPasswords] = useState([])
     const [showNewPasswordDialog, setShowNewPasswordDialog] = useState(false)
+    const [showVisiblePassword, setShowVisiblePassword] = useState(undefined)
 
     useEffect(() => {
         ipcRenderer.send('get-passwords')
@@ -69,10 +92,17 @@ const PasswordTable = () => {
         })
 
         ipcRenderer.on('decrypt-password-response', (_, arg) => {
-            console.log(arg)
+            const response = arg
+            setShowVisiblePassword(response)
         })
 
-        return function cleanup() {
+        ipcRenderer.on('remove-password-response', (_, arg) => {
+            if (arg) {
+                ipcRenderer.send('get-passwords')
+            }
+        })
+
+        return () => {
             ipcRenderer.removeAllListeners('decrypt-password-response')
             ipcRenderer.removeAllListeners('get-passwords-response')
         }
@@ -86,20 +116,36 @@ const PasswordTable = () => {
         setShowNewPasswordDialog(true)
     }
 
+    const visibilityChanged = (id, value) => {
+        const password = passwords.find((password) => password.id === id)
+        if (password && value) {
+            ipcRenderer.send('decrypt-password', { password: password.password })
+        }
+    }
+
     return (
-        <div style={{ backgroundColor: 'white', width: '100%' }}>
-            <List>
-                {passwords.map((value, index) => (
-                    <PasswordRow key={index} id={value.id} url={value.url} password={value.password} />
-                ))}
-            </List>
-            <ButtonGroup disableElevation style={{ height: '48px' }} fullWidth variant="contained">
-                <Button color="primary" onClick={() => createPassword()}>
-                    <AddIcon />
-                </Button>
-            </ButtonGroup>
-            {showNewPasswordDialog && <AddNewPasswordDialog onClose={() => setShowNewPasswordDialog(false)} />}
-        </div>
+        <Paper elevation={3}>
+            <Profile />
+            <div style={{ backgroundColor: 'white', width: '100%' }}>
+                <List>
+                    {passwords.map((value, index) => (
+                        <PasswordRow
+                            key={index}
+                            id={value.id}
+                            url={value.url}
+                            password={value.password}
+                            onVisibilityChanged={visibilityChanged} />
+                    ))}
+                </List>
+                <ButtonGroup disableElevation style={{ height: '48px' }} fullWidth variant="contained">
+                    <Button color="primary" onClick={() => createPassword()}>
+                        <AddIcon />
+                    </Button>
+                </ButtonGroup>
+                {showNewPasswordDialog && <AddNewPasswordDialog onClose={() => setShowNewPasswordDialog(false)} />}
+                {showVisiblePassword && <PasswordDialog onClose={() => setShowVisiblePassword(undefined)} password={showVisiblePassword} />}
+            </div>
+        </Paper>
     )
 }
 

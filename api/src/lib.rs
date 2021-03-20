@@ -161,11 +161,12 @@ fn get_passwords() -> serde_json::Value {
     }
 }
 
-fn decrypt_password(id: &str) -> serde_json::Value {
+fn decrypt_password(password: &str) -> serde_json::Value {
     match get_user_by_session() {
-        Some(user) => Password::find_by(id)
-            .map(|password| json!(encrypt::decrypt(&user, password.password.as_str())))
-            .unwrap_or_else(|_| json!(FailureKind::NotAuthorized)),
+        Some(ref user) => match encrypt::decrypt(user, password) {
+            Ok(password) => json!(password),
+            Err(err) => json!(err),
+        },
         None => json!(FailureKind::NotAuthorized),
     }
 }

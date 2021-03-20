@@ -2,40 +2,28 @@ import React, { useEffect, useState } from 'react'
 import { Grid, IconButton, ListItem, ListItemSecondaryAction, ListItemText, Typography } from '@material-ui/core'
 import DeleteIcon from '@material-ui/icons/Delete'
 import VisibilityIcon from '@material-ui/icons/Visibility'
-import VisibilityOffIcon from '@material-ui/icons/VisibilityOff'
 import { ipcRenderer } from 'electron'
 
 const PasswordRow = (props) => {
     const [visible, setVisible] = useState(false)
-    const [password, setPassword] = useState('***********')
+    const { id, url, onVisibilityChanged } = props
 
-    useEffect(() => {
-        if (visible) {
-            ipcRenderer.send('decrypt-password', {
-                id: props.id,
-            })
-        } else {
-            setPassword('***********')
-        }
-    }, [visible])
+    useEffect(() => { onVisibilityChanged(id, visible); setVisible(false) }, [visible])
 
     return (
         <ListItem>
             <ListItemText>
                 <Grid container>
-                    <Grid item xs={12} md={6}>
-                        <Typography>{props.url}</Typography>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <Typography>{password}</Typography>
+                    <Grid item xs={12}>
+                        <Typography><b>{url}</b></Typography>
                     </Grid>
                 </Grid>
             </ListItemText>
             <ListItemSecondaryAction>
                 <IconButton onClick={() => setVisible(!visible)}>
-                    {visible ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    <VisibilityIcon />
                 </IconButton>
-                <IconButton>
+                <IconButton onClick={() => ipcRenderer.send('remove-password', { id })}>
                     <DeleteIcon />
                 </IconButton>
             </ListItemSecondaryAction>

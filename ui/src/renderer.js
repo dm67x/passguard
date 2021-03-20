@@ -31,7 +31,7 @@ import React from 'react'
 import { HashRouter, Route, Switch } from 'react-router-dom'
 import WelcomeForm from './components/WelcomeForm'
 import PasswordTable from './components/PasswordTable'
-import Container from '@material-ui/core/Container'
+import { Container } from '@material-ui/core'
 import '@fontsource/roboto'
 import './index.css'
 

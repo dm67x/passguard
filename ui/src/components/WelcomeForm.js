@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import TextField from '@material-ui/core/TextField'
-import Grid from '@material-ui/core/Grid'
-import Typography from '@material-ui/core/Typography'
-import Button from '@material-ui/core/Button'
-import ButtonGroup from '@material-ui/core/ButtonGroup'
+import { Grid, Button, ButtonGroup, Paper } from '@material-ui/core'
 import { ipcRenderer } from 'electron'
 import { useHistory } from 'react-router-dom'
+import logo from '../images/icon.png'
 
 const WelcomeForm = () => {
     const [username, setUsername] = useState("")
@@ -22,7 +20,7 @@ const WelcomeForm = () => {
             arg.username ? history.push('/passwords') : setError(true)
         })
 
-        return function cleanup() {
+        return () => {
             ipcRenderer.removeAllListeners('signin-response')
             ipcRenderer.removeAllListeners('signup-response')
             setError(false)
@@ -50,34 +48,32 @@ const WelcomeForm = () => {
                 left: '50%',
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
-                backgroundColor: 'white',
-                padding: '20px',
-                boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.5)'
+                boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
             }}>
-            <Grid
-                container
-                spacing={3}
-                direction="row"
-                alignItems="center"
-                justify="center">
-                <Grid item xs={12}>
-                    <Typography variant="h4" align="center">
-                        Welcome
-                    </Typography>
+            <Paper elevation={3} style={{ padding: '20px' }}>
+                <Grid
+                    container
+                    spacing={3}
+                    direction="row"
+                    alignItems="center"
+                    justify="center">
+                    <Grid item xs={12} align="center">
+                        <img src={logo} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField fullWidth error={error} required label="Username" onChange={e => { setUsername(e.target.value) }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <TextField fullWidth error={error} required type="password" label="Password" onChange={e => { setPassword(e.target.value) }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <ButtonGroup disableElevation style={{ height: '48px' }} fullWidth variant="contained">
+                            <Button color="primary" onClick={() => signin()}>Signin</Button>
+                            <Button color="secondary" onClick={() => signup()}>Signup</Button>
+                        </ButtonGroup>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12}>
-                    <TextField fullWidth error={error} required label="Username" onChange={e => { setUsername(e.target.value) }} />
-                </Grid>
-                <Grid item xs={12}>
-                    <TextField fullWidth error={error} required type="password" label="Password" onChange={e => { setPassword(e.target.value) }} />
-                </Grid>
-                <Grid item xs={12}>
-                    <ButtonGroup disableElevation style={{ height: '48px' }} fullWidth variant="contained">
-                        <Button color="primary" onClick={() => signin()}>Signin</Button>
-                        <Button color="secondary" onClick={() => signup()}>Signup</Button>
-                    </ButtonGroup>
-                </Grid>
-            </Grid>
+            </Paper>
         </div>
     )
 }

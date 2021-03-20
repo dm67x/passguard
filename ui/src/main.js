@@ -66,10 +66,14 @@ ipcMain.on('signup', (event, arg) => {
   }))
 })
 
+ipcMain.on('signout', (event) => {
+  event.reply('signout-response', lib.call({ methodName: 'signout' }))
+})
+
 ipcMain.on('decrypt-password', (event, arg) => {
   event.reply('decrypt-password-response', lib.call({
     methodName: 'decrypt',
-    param1: arg.id,
+    param1: arg.password,
   }))
 })
 
@@ -84,5 +88,12 @@ ipcMain.on('add-password', (event, arg) => {
     methodName: 'createPassword',
     param1: arg.url,
     param2: arg.password
+  }))
+})
+
+ipcMain.on('remove-password', (event, arg) => {
+  event.reply('remove-password-response', lib.call({
+    methodName: 'deletePassword',
+    param1: arg.id
   }))
 })
