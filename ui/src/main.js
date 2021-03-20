@@ -53,7 +53,36 @@ app.on('activate', () => {
 ipcMain.on('signin', (event, arg) => {
   event.reply('signin-response', lib.call({
     methodName: 'signin',
-    param1: arg.username || '',
-    param2: arg.password || ''
+    param1: arg.username,
+    param2: arg.password
+  }))
+})
+
+ipcMain.on('signup', (event, arg) => {
+  event.reply('signup-response', lib.call({
+    methodName: 'createUser',
+    param1: arg.username,
+    param2: arg.password
+  }))
+})
+
+ipcMain.on('decrypt-password', (event, arg) => {
+  event.reply('decrypt-password-response', lib.call({
+    methodName: 'decrypt',
+    param1: arg.id,
+  }))
+})
+
+ipcMain.on('get-passwords', (event, arg) => {
+  event.reply('get-passwords-response', lib.call({
+    methodName: 'getPasswords'
+  }))
+})
+
+ipcMain.on('add-password', (event, arg) => {
+  event.reply('add-password-response', lib.call({
+    methodName: 'createPassword',
+    param1: arg.url,
+    param2: arg.password
   }))
 })

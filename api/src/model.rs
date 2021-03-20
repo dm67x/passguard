@@ -50,6 +50,12 @@ impl User {
 
 impl Model for User {
     fn save(&self) -> Result<Self, FailureKind> {
+        if self.username.is_empty() || self.password.is_empty() {
+            return Err(FailureKind::InvalidData(
+                "Username or password is empty".to_owned(),
+            ));
+        }
+
         let pool = database::get()?.get()?;
         pool.execute(
             "DELETE FROM users WHERE username = ?1",
@@ -121,6 +127,12 @@ impl Password {
 
 impl Model for Password {
     fn save(&self) -> Result<Self, FailureKind> {
+        if self.url.is_empty() || self.password.is_empty() {
+            return Err(FailureKind::InvalidData(
+                "URL or password is empty".to_owned(),
+            ));
+        }
+
         let pool = database::get()?.get()?;
         pool.execute("DELETE FROM passwords WHERE id = ?1", params![self.id])?;
         pool.execute(

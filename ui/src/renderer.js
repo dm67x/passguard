@@ -28,16 +28,23 @@
 
 import { render } from 'react-dom'
 import React from 'react'
+import { HashRouter, Route, Switch } from 'react-router-dom'
 import WelcomeForm from './components/WelcomeForm'
+import PasswordTable from './components/PasswordTable'
 import Container from '@material-ui/core/Container'
 import '@fontsource/roboto'
 import './index.css'
 
 const App = () => {
     return (
-        <Container maxWidth="sm">
-            <WelcomeForm />
-        </Container>
+        <HashRouter>
+            <Container fixed>
+                <Switch>
+                    <Route path="/" exact component={WelcomeForm} />
+                    <Route path="/passwords" component={PasswordTable} />
+                </Switch>
+            </Container>
+        </HashRouter>
     )
 }
 
