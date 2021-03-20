@@ -1,4 +1,4 @@
-const nodeExternals = require('webpack-node-externals')
+const { dependencies } = require('./package.json')
 
 module.exports = {
   /**
@@ -10,5 +10,7 @@ module.exports = {
   module: {
     rules: require('./webpack.rules'),
   },
-  externals: [nodeExternals()],
+  externals: [
+    ...Object.keys(dependencies || {})
+  ],
 };

@@ -1,8 +1,8 @@
 {
-  "name": "ui",
-  "productName": "ui",
+  "name": "passguard",
+  "productName": "Passguard",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Password manager",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -24,7 +24,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "ui"
+            "name": "app"
           }
         },
         {
@@ -79,9 +79,7 @@
     "file-loader": "^6.2.0",
     "node-gyp": "^7.1.2",
     "node-loader": "^1.0.1",
-    "style-loader": "^1.2.1",
-    "vue-template-compiler": "^2.6.12",
-    "webpack-node-externals": "^2.5.2"
+    "style-loader": "^1.2.1"
   },
   "dependencies": {
     "@fontsource/roboto": "^4.2.2",
@@ -89,7 +87,7 @@
     "@material-ui/data-grid": "^4.0.0-alpha.22",
     "@material-ui/icons": "^4.11.2",
     "electron-squirrel-startup": "^1.0.0",
-    "ffi-napi": "^4.0.2",
+    "ffi-napi": "^4.0.3",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",

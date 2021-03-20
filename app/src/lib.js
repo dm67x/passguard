@@ -20,7 +20,7 @@ let init = () => {
     })
 }
 
-export const call = (params) => {
+export const entrypoint = (params) => {
     init()
     const { methodName, param1, param2 } = params
     const parameters = new Parameters({

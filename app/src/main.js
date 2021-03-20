@@ -1,6 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const lib = require('./lib')
+const { app, BrowserWindow } = require('electron')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -50,50 +48,4 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-ipcMain.on('signin', (event, arg) => {
-  event.reply('signin-response', lib.call({
-    methodName: 'signin',
-    param1: arg.username,
-    param2: arg.password
-  }))
-})
-
-ipcMain.on('signup', (event, arg) => {
-  event.reply('signup-response', lib.call({
-    methodName: 'createUser',
-    param1: arg.username,
-    param2: arg.password
-  }))
-})
-
-ipcMain.on('signout', (event) => {
-  event.reply('signout-response', lib.call({ methodName: 'signout' }))
-})
-
-ipcMain.on('decrypt-password', (event, arg) => {
-  event.reply('decrypt-password-response', lib.call({
-    methodName: 'decrypt',
-    param1: arg.password,
-  }))
-})
-
-ipcMain.on('get-passwords', (event, arg) => {
-  event.reply('get-passwords-response', lib.call({
-    methodName: 'getPasswords'
-  }))
-})
-
-ipcMain.on('add-password', (event, arg) => {
-  event.reply('add-password-response', lib.call({
-    methodName: 'createPassword',
-    param1: arg.url,
-    param2: arg.password
-  }))
-})
-
-ipcMain.on('remove-password', (event, arg) => {
-  event.reply('remove-password-response', lib.call({
-    methodName: 'deletePassword',
-    param1: arg.id
-  }))
-})
+require('./eventListener')
