@@ -30,6 +30,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Package the app
+        working-directory: app
         run: |
           yarn
           yarn package
