@@ -1,0 +1,27 @@
+{
+    "presets": [
+        "@babel/preset-env",
+        "@babel/preset-react"
+    ],
+    "plugins": [
+        [
+            "file-loader",
+            {
+                "name": "[hash].[ext]",
+                "extensions": [
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "gif",
+                    "svg",
+                    "woff",
+                    "woff2",
+                    "eot",
+                    "ttf"
+                ],
+                "outputPath": "./build/public",
+                "publicPath": "./public"
+            }
+        ]
+    ]
+}

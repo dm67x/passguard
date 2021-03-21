@@ -88,5 +88,6 @@ typings/
 # Electron-Forge
 out/
 
+build
 passguard.db
 passguard_api.dll
