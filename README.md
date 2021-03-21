@@ -7,7 +7,7 @@ Why not ?
 
 ## Licence
 
-No licence, you can use it, update it or do everything you want 😸
+No licence, you can use it, update it or do anything you want 😸
 
 ## Author
 
