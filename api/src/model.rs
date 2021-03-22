@@ -209,7 +209,7 @@ mod model_test {
         User::new("test2", "test").save().unwrap();
         assert!(User::find_by("test").is_ok());
         assert!(User::find_by("test2").is_ok());
-        assert_ne!("test2", User::find_by("test").unwrap().as_str());
+        assert_ne!("test2", User::find_by("test").unwrap().username.as_str());
     }
 
     #[test]
