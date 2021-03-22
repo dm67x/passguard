@@ -5,9 +5,14 @@ use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::params;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(not(test))]
+static DBPATH: &'static str = "passguard.db";
+#[cfg(test)]
+static DBPATH: &'static str = "passguard_test.db";
+
 lazy_static! {
     static ref SQLITE: Pool<SqliteConnectionManager> = {
-        let sqlite = SqliteConnectionManager::file("passguard.db");
+        let sqlite = SqliteConnectionManager::file(DBPATH);
         Pool::new(sqlite).unwrap()
     };
     static ref INITIALIZED: AtomicBool = AtomicBool::new(false);
@@ -45,4 +50,11 @@ pub(crate) fn get() -> Result<&'static Pool<SqliteConnectionManager>, FailureKin
         init(pool)?;
     }
     Ok(pool)
+}
+
+#[cfg(test)]
+pub(crate) fn empty() {
+    let pool = get().unwrap().get().unwrap();
+    pool.execute("DELETE FROM passwords", params![]).unwrap();
+    pool.execute("DELETE FROM users", params![]).unwrap();
 }

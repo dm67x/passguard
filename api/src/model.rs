@@ -142,3 +142,124 @@ impl Model for Password {
         Ok(self.clone())
     }
 }
+
+mod model_test {
+    use super::{Model, Password, User};
+    use crate::database;
+    use rusqlite::params;
+
+    fn get_users() -> Vec<User> {
+        let pool = database::get().unwrap().get().unwrap();
+        let mut statement = pool
+            .prepare("SELECT username, password FROM users")
+            .unwrap();
+        let mut rows = statement.query(params![]).unwrap();
+        let mut users = vec![];
+        while let Some(row) = rows.next().unwrap() {
+            users.push(User {
+                username: row.get(0).unwrap(),
+                password: row.get(1).unwrap(),
+            });
+        }
+        users
+    }
+
+    fn get_passwords() -> Vec<Password> {
+        let pool = database::get().unwrap().get().unwrap();
+        let mut statement = pool
+            .prepare("SELECT id, url, password, user_id FROM passwords")
+            .unwrap();
+        let mut rows = statement.query(params![]).unwrap();
+        let mut passwords = vec![];
+        while let Some(row) = rows.next().unwrap() {
+            passwords.push(Password {
+                id: row.get(0).unwrap(),
+                url: row.get(1).unwrap(),
+                password: row.get(2).unwrap(),
+                user_id: row.get(3).unwrap(),
+            });
+        }
+        passwords
+    }
+
+    #[test]
+    fn test_user_save() {
+        database::empty();
+        assert!(get_users().is_empty());
+        assert!(User::new("", "").save().is_err());
+        User::new("test", "test").save().unwrap();
+        User::new("test", "test").save().unwrap();
+        assert_eq!(1, get_users().len());
+    }
+
+    #[test]
+    fn test_user_destroy() {
+        database::empty();
+        let user = User::new("test", "test").save().unwrap();
+        assert_eq!(1, get_users().len());
+        user.destroy().unwrap();
+        assert!(get_users().is_empty());
+    }
+
+    #[test]
+    fn test_user_find_by() {
+        database::empty();
+        User::new("test", "test").save().unwrap();
+        User::new("test2", "test").save().unwrap();
+        assert!(User::find_by("test").is_ok());
+        assert!(User::find_by("test2").is_ok());
+        assert_ne!(
+            "test2",
+            User::find_by("test")
+                .map(|user| user.username)
+                .unwrap_or("".to_owned())
+                .as_str()
+        );
+    }
+
+    #[test]
+    fn test_password_save() {
+        database::empty();
+        assert!(get_passwords().is_empty());
+        let user = User::new("test", "test").save().unwrap();
+        assert!(Password::new(&user, "", "").save().is_err());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, get_passwords().len());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(2, get_passwords().len());
+    }
+
+    #[test]
+    fn test_password_destroy() {
+        database::empty();
+        let user = User::new("test", "test").save().unwrap();
+        let password = Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, get_passwords().len());
+        password.destroy().unwrap();
+        assert!(get_passwords().is_empty());
+    }
+
+    #[test]
+    fn test_password_find_by_id() {
+        database::empty();
+        let user = User::new("test", "test").save().unwrap();
+        let password = Password::new(&user, "test", "test").save().unwrap();
+        assert!(Password::find_by("").is_err());
+        assert!(Password::find_by(password.id.as_str()).is_ok());
+    }
+
+    #[test]
+    fn test_password_get_all() {
+        database::empty();
+        let user = User::new("test", "test").save().unwrap();
+        let user2 = User::new("test2", "test").save().unwrap();
+        assert!(Password::get_all(&user).unwrap().is_empty());
+        assert!(Password::get_all(&user2).unwrap().is_empty());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, Password::get_all(&user).unwrap().len());
+        assert!(Password::get_all(&user2).unwrap().is_empty());
+        Password::new(&user2, "test", "test").save().unwrap();
+        assert_eq!(1, Password::get_all(&user).unwrap().len());
+        assert_eq!(1, Password::get_all(&user2).unwrap().len());
+    }
+}
