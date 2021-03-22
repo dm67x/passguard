@@ -143,111 +143,132 @@ impl Model for Password {
     }
 }
 
-// #[cfg(test)]
-// mod model_test {
-//     use super::{Model, Password, User};
-//     use crate::database;
-//     use rusqlite::params;
+#[cfg(test)]
+mod model_test {
+    use super::{Model, Password, User};
+    use crate::database;
+    use rusqlite::params;
+    use serial_test::serial;
 
-//     fn get_users() -> Vec<User> {
-//         let pool = database::get().unwrap();
-//         let mut statement = pool
-//             .prepare("SELECT username, password FROM users")
-//             .unwrap();
-//         let mut rows = statement.query(params![]).unwrap();
-//         let mut users = vec![];
-//         while let Some(row) = rows.next().unwrap() {
-//             users.push(User {
-//                 username: row.get(0).unwrap(),
-//                 password: row.get(1).unwrap(),
-//             });
-//         }
-//         users
-//     }
+    fn get_users() -> Vec<User> {
+        let pool = database::get().unwrap();
+        let mut statement = pool
+            .prepare("SELECT username, password FROM users")
+            .unwrap();
+        let mut rows = statement.query(params![]).unwrap();
+        let mut users = vec![];
+        while let Some(row) = rows.next().unwrap() {
+            users.push(User {
+                username: row.get(0).unwrap(),
+                password: row.get(1).unwrap(),
+            });
+        }
+        users
+    }
 
-//     fn get_passwords() -> Vec<Password> {
-//         let pool = database::get().unwrap();
-//         let mut statement = pool
-//             .prepare("SELECT id, url, password, user_id FROM passwords")
-//             .unwrap();
-//         let mut rows = statement.query(params![]).unwrap();
-//         let mut passwords = vec![];
-//         while let Some(row) = rows.next().unwrap() {
-//             passwords.push(Password {
-//                 id: row.get(0).unwrap(),
-//                 url: row.get(1).unwrap(),
-//                 password: row.get(2).unwrap(),
-//                 user_id: row.get(3).unwrap(),
-//             });
-//         }
-//         passwords
-//     }
+    fn get_passwords() -> Vec<Password> {
+        let pool = database::get().unwrap();
+        let mut statement = pool
+            .prepare("SELECT id, url, password, user_id FROM passwords")
+            .unwrap();
+        let mut rows = statement.query(params![]).unwrap();
+        let mut passwords = vec![];
+        while let Some(row) = rows.next().unwrap() {
+            passwords.push(Password {
+                id: row.get(0).unwrap(),
+                url: row.get(1).unwrap(),
+                password: row.get(2).unwrap(),
+                user_id: row.get(3).unwrap(),
+            });
+        }
+        passwords
+    }
 
-//     #[test]
-//     fn test_user_save() {
-//         assert!(get_users().is_empty());
-//         assert!(User::new("", "").save().is_err());
-//         User::new("test", "test").save().unwrap();
-//         User::new("test", "test").save().unwrap();
-//         assert_eq!(1, get_users().len());
-//     }
+    fn empty_database() {
+        let pool = database::get().unwrap();
+        pool.execute("DELETE FROM passwords", params![]).unwrap();
+        pool.execute("DELETE FROM users", params![]).unwrap();
+    }
 
-//     #[test]
-//     fn test_user_destroy() {
-//         let user = User::new("test", "test").save().unwrap();
-//         assert_eq!(1, get_users().len());
-//         user.destroy().unwrap();
-//         assert!(get_users().is_empty());
-//     }
+    #[test]
+    #[serial]
+    fn test_user_save() {
+        empty_database();
+        assert!(get_users().is_empty());
+        assert!(User::new("", "").save().is_err());
+        User::new("test", "test").save().unwrap();
+        User::new("test", "test").save().unwrap();
+        assert_eq!(1, get_users().len());
+    }
 
-//     #[test]
-//     fn test_user_find_by() {
-//         User::new("test", "test").save().unwrap();
-//         User::new("test2", "test").save().unwrap();
-//         assert!(User::find_by("test").is_ok());
-//         assert!(User::find_by("test2").is_ok());
-//         assert_ne!("test2", User::find_by("test").unwrap().username.as_str());
-//     }
+    #[test]
+    #[serial]
+    fn test_user_destroy() {
+        empty_database();
+        let user = User::new("test", "test").save().unwrap();
+        assert_eq!(1, get_users().len());
+        user.destroy().unwrap();
+        assert!(get_users().is_empty());
+    }
 
-//     #[test]
-//     fn test_password_save() {
-//         assert!(get_passwords().is_empty());
-//         let user = User::new("test", "test").save().unwrap();
-//         assert!(Password::new(&user, "", "").save().is_err());
-//         Password::new(&user, "test", "test").save().unwrap();
-//         assert_eq!(1, get_passwords().len());
-//         Password::new(&user, "test", "test").save().unwrap();
-//         assert_eq!(2, get_passwords().len());
-//     }
+    #[test]
+    #[serial]
+    fn test_user_find_by() {
+        empty_database();
+        User::new("test", "test").save().unwrap();
+        User::new("test2", "test").save().unwrap();
+        assert!(User::find_by("test").is_ok());
+        assert!(User::find_by("test2").is_ok());
+        assert_ne!("test2", User::find_by("test").unwrap().username.as_str());
+    }
 
-//     #[test]
-//     fn test_password_destroy() {
-//         let user = User::new("test", "test").save().unwrap();
-//         let password = Password::new(&user, "test", "test").save().unwrap();
-//         assert_eq!(1, get_passwords().len());
-//         password.destroy().unwrap();
-//         assert!(get_passwords().is_empty());
-//     }
+    #[test]
+    #[serial]
+    fn test_password_save() {
+        empty_database();
+        assert!(get_passwords().is_empty());
+        let user = User::new("test", "test").save().unwrap();
+        assert!(Password::new(&user, "", "").save().is_err());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, get_passwords().len());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(2, get_passwords().len());
+    }
 
-//     #[test]
-//     fn test_password_find_by_id() {
-//         let user = User::new("test", "test").save().unwrap();
-//         let password = Password::new(&user, "test", "test").save().unwrap();
-//         assert!(Password::find_by("").is_err());
-//         assert!(Password::find_by(password.id.as_str()).is_ok());
-//     }
+    #[test]
+    #[serial]
+    fn test_password_destroy() {
+        empty_database();
+        let user = User::new("test", "test").save().unwrap();
+        let password = Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, get_passwords().len());
+        password.destroy().unwrap();
+        assert!(get_passwords().is_empty());
+    }
 
-//     #[test]
-//     fn test_password_get_all() {
-//         let user = User::new("test", "test").save().unwrap();
-//         let user2 = User::new("test2", "test").save().unwrap();
-//         assert!(Password::get_all(&user).unwrap().is_empty());
-//         assert!(Password::get_all(&user2).unwrap().is_empty());
-//         Password::new(&user, "test", "test").save().unwrap();
-//         assert_eq!(1, Password::get_all(&user).unwrap().len());
-//         assert!(Password::get_all(&user2).unwrap().is_empty());
-//         Password::new(&user2, "test", "test").save().unwrap();
-//         assert_eq!(1, Password::get_all(&user).unwrap().len());
-//         assert_eq!(1, Password::get_all(&user2).unwrap().len());
-//     }
-// }
+    #[test]
+    #[serial]
+    fn test_password_find_by_id() {
+        empty_database();
+        let user = User::new("test", "test").save().unwrap();
+        let password = Password::new(&user, "test", "test").save().unwrap();
+        assert!(Password::find_by("").is_err());
+        assert!(Password::find_by(password.id.as_str()).is_ok());
+    }
+
+    #[test]
+    #[serial]
+    fn test_password_get_all() {
+        empty_database();
+        let user = User::new("test", "test").save().unwrap();
+        let user2 = User::new("test2", "test").save().unwrap();
+        assert!(Password::get_all(&user).unwrap().is_empty());
+        assert!(Password::get_all(&user2).unwrap().is_empty());
+        Password::new(&user, "test", "test").save().unwrap();
+        assert_eq!(1, Password::get_all(&user).unwrap().len());
+        assert!(Password::get_all(&user2).unwrap().is_empty());
+        Password::new(&user2, "test", "test").save().unwrap();
+        assert_eq!(1, Password::get_all(&user).unwrap().len());
+        assert_eq!(1, Password::get_all(&user2).unwrap().len());
+    }
+}
