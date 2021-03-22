@@ -143,6 +143,7 @@ impl Model for Password {
     }
 }
 
+#[cfg(test)]
 mod model_test {
     use super::{Model, Password, User};
     use crate::database;

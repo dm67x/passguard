@@ -6,9 +6,9 @@ use rusqlite::params;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(not(test))]
-static DBPATH: &'static str = "passguard.db";
+static DBPATH: &str = "passguard.db";
 #[cfg(test)]
-static DBPATH: &'static str = "passguard_test.db";
+static DBPATH: &str = "passguard_test.db";
 
 lazy_static! {
     static ref SQLITE: Pool<SqliteConnectionManager> = {
