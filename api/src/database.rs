@@ -61,3 +61,10 @@ pub(crate) fn get() -> Result<PooledConnection<SqliteConnectionManager>, Failure
     }
     Ok(pool)
 }
+
+#[cfg(test)]
+pub(crate) fn empty() {
+    let pool = get().unwrap();
+    pool.execute("DELETE FROM passwords", params![]).unwrap();
+    pool.execute("DELETE FROM users", params![]).unwrap();
+}

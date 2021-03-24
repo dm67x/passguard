@@ -184,16 +184,10 @@ mod model_test {
         passwords
     }
 
-    fn empty_database() {
-        let pool = database::get().unwrap();
-        pool.execute("DELETE FROM passwords", params![]).unwrap();
-        pool.execute("DELETE FROM users", params![]).unwrap();
-    }
-
     #[test]
     #[serial]
     fn test_user_save() {
-        empty_database();
+        database::empty();
         assert!(get_users().is_empty());
         assert!(User::new("", "").save().is_err());
         User::new("test", "test").save().unwrap();
@@ -204,7 +198,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_user_destroy() {
-        empty_database();
+        database::empty();
         let user = User::new("test", "test").save().unwrap();
         assert_eq!(1, get_users().len());
         user.destroy().unwrap();
@@ -214,7 +208,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_user_find_by() {
-        empty_database();
+        database::empty();
         User::new("test", "test").save().unwrap();
         User::new("test2", "test").save().unwrap();
         assert!(User::find_by("test").is_ok());
@@ -225,7 +219,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_password_save() {
-        empty_database();
+        database::empty();
         assert!(get_passwords().is_empty());
         let user = User::new("test", "test").save().unwrap();
         assert!(Password::new(&user, "", "").save().is_err());
@@ -238,7 +232,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_password_destroy() {
-        empty_database();
+        database::empty();
         let user = User::new("test", "test").save().unwrap();
         let password = Password::new(&user, "test", "test").save().unwrap();
         assert_eq!(1, get_passwords().len());
@@ -249,7 +243,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_password_find_by_id() {
-        empty_database();
+        database::empty();
         let user = User::new("test", "test").save().unwrap();
         let password = Password::new(&user, "test", "test").save().unwrap();
         assert!(Password::find_by("").is_err());
@@ -259,7 +253,7 @@ mod model_test {
     #[test]
     #[serial]
     fn test_password_get_all() {
-        empty_database();
+        database::empty();
         let user = User::new("test", "test").save().unwrap();
         let user2 = User::new("test2", "test").save().unwrap();
         assert!(Password::get_all(&user).unwrap().is_empty());

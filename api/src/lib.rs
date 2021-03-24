@@ -19,7 +19,7 @@ lazy_static! {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameters {
     method_name: *const c_char,
     param1: *const c_char,
@@ -168,5 +168,114 @@ fn decrypt_password(password: &str) -> serde_json::Value {
             Err(err) => json!(err),
         },
         None => json!(FailureKind::NotAuthorized),
+    }
+}
+
+#[cfg(test)]
+mod lib_test {
+    use super::{entrypoint, Parameters};
+    use crate::database;
+    use crate::encrypt;
+    use crate::model::User;
+    use serial_test::serial;
+    use std::{ffi::CString, os::raw::c_char};
+
+    #[test]
+    #[serial]
+    fn signin() {
+        database::empty();
+        // Create user
+        let method_name = CString::new("createUser").unwrap();
+        let param1 = CString::new("test").unwrap();
+        let param2 = CString::new("password").unwrap();
+
+        let mut params = Parameters {
+            method_name: method_name.as_ptr() as *const c_char,
+            param1: param1.as_ptr() as *const c_char,
+            param2: param2.as_ptr() as *const c_char,
+        };
+        unsafe {
+            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+
+        // Signin
+        let method_name = CString::new("signin").unwrap();
+
+        // with empty param
+        let param1 = CString::new("").unwrap();
+        let param2 = CString::new("").unwrap();
+        params.method_name = method_name.as_ptr() as *const c_char;
+        params.param1 = param1.as_ptr() as *const c_char;
+        params.param2 = param2.as_ptr() as *const c_char;
+        let result = unsafe {
+            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+        assert_eq!(
+            false,
+            serde_json::from_str::<bool>(result.to_str().unwrap()).unwrap()
+        );
+
+        // user don't exist
+        let param1 = CString::new("test2").unwrap();
+        let param2 = CString::new("password").unwrap();
+        params.param1 = param1.as_ptr() as *const c_char;
+        params.param2 = param2.as_ptr() as *const c_char;
+        let result = unsafe {
+            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+        assert_eq!(
+            false,
+            serde_json::from_str::<bool>(result.to_str().unwrap()).unwrap()
+        );
+
+        // with wrong password
+        let param1 = CString::new("test").unwrap();
+        let param2 = CString::new("test").unwrap();
+        params.param1 = param1.as_ptr() as *const c_char;
+        params.param2 = param2.as_ptr() as *const c_char;
+        let result = unsafe {
+            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+        assert_eq!(
+            false,
+            serde_json::from_str::<bool>(result.to_str().unwrap()).unwrap()
+        );
+
+        // Signin with true credential
+        let param1 = CString::new("test").unwrap();
+        let param2 = CString::new("password").unwrap();
+        params.param1 = param1.as_ptr() as *const c_char;
+        params.param2 = param2.as_ptr() as *const c_char;
+        let result = unsafe {
+            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+        assert!(serde_json::from_str::<bool>(result.to_str().unwrap()).unwrap());
+    }
+
+    #[test]
+    #[serial]
+    fn create_account() {
+        database::empty();
+        let method_name = CString::new("createUser").unwrap();
+        let param1 = CString::new("test").unwrap();
+        let param2 = CString::new("password").unwrap();
+
+        let params = Box::new(Parameters {
+            method_name: method_name.as_ptr() as *const c_char,
+            param1: param1.as_ptr() as *const c_char,
+            param2: param2.as_ptr() as *const c_char,
+        });
+        let result = unsafe {
+            let result = entrypoint(Box::into_raw(params) as *const Parameters);
+            CString::from_raw(result as *mut c_char)
+        };
+        let result: User = serde_json::from_str(result.to_str().unwrap()).unwrap();
+        assert_eq!("test", result.username.as_str());
+        assert_eq!(encrypt::hash("password"), result.password);
     }
 }
