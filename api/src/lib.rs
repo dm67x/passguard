@@ -251,7 +251,7 @@ mod lib_test {
         params.param1 = param1.as_ptr() as *const c_char;
         params.param2 = param2.as_ptr() as *const c_char;
         let result = unsafe {
-            let result = entrypoint(Box::into_raw(Box::new(params.clone())) as *const Parameters);
+            let result = entrypoint(Box::into_raw(Box::new(params)) as *const Parameters);
             CString::from_raw(result as *mut c_char)
         };
         assert!(serde_json::from_str::<bool>(result.to_str().unwrap()).unwrap());
