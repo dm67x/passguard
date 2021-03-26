@@ -13,11 +13,11 @@ const WelcomeForm = () => {
 
     useEffect(() => {
         ipcRenderer.on('signin-response', (_, arg) => {
-            arg ? history.push('/passwords') : setError(true)
+            arg?.error ? setError(true) : history.push('/passwords')
         })
 
         ipcRenderer.on('signup-response', (_, arg) => {
-            arg.username ? history.push('/passwords') : setError(true)
+            arg?.error ? setError(true) : history.push('/passwords')
         })
 
         return () => {

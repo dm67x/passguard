@@ -10,7 +10,7 @@ const Profile = () => {
 
     useEffect(() => {
         ipcRenderer.on('signout-response', (_, arg) => {
-            if (arg) {
+            if (!arg?.error) {
                 history.replace('/')
             }
         })

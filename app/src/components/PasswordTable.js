@@ -15,11 +15,11 @@ const AddNewPasswordDialog = (props) => {
 
     useEffect(() => {
         ipcRenderer.on('add-password-response', (_, arg) => {
-            if (arg) {
+            if (arg?.error) {
+                setError("cannot create the password")
+            } else {
                 setOpen(false)
                 onClose()
-            } else {
-                setError("cannot create the password")
             }
         })
 
@@ -97,7 +97,7 @@ const PasswordTable = () => {
         })
 
         ipcRenderer.on('remove-password-response', (_, arg) => {
-            if (arg) {
+            if (!arg?.error) {
                 ipcRenderer.send('get-passwords')
             }
         })

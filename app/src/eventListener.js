@@ -3,48 +3,45 @@ const { entrypoint } = require('./lib')
 
 ipcMain.on('signin', (event, arg) => {
     event.reply('signin-response', entrypoint({
-        methodName: 'signin',
-        param1: arg.username,
-        param2: arg.password
+        method: 'signin',
+        params: [arg.username, arg.password]
     }))
 })
 
 ipcMain.on('signup', (event, arg) => {
     event.reply('signup-response', entrypoint({
-        methodName: 'createUser',
-        param1: arg.username,
-        param2: arg.password
+        method: 'createUser',
+        params: [arg.username, arg.password]
     }))
 })
 
 ipcMain.on('signout', (event) => {
-    event.reply('signout-response', entrypoint({ methodName: 'signout' }))
+    event.reply('signout-response', entrypoint({ method: 'signout' }))
 })
 
 ipcMain.on('decrypt-password', (event, arg) => {
     event.reply('decrypt-password-response', entrypoint({
-        methodName: 'decrypt',
-        param1: arg.password,
+        method: 'decrypt',
+        params: [arg.password]
     }))
 })
 
 ipcMain.on('get-passwords', (event, arg) => {
     event.reply('get-passwords-response', entrypoint({
-        methodName: 'getPasswords'
+        method: 'getPasswords'
     }))
 })
 
 ipcMain.on('add-password', (event, arg) => {
     event.reply('add-password-response', entrypoint({
-        methodName: 'createPassword',
-        param1: arg.url,
-        param2: arg.password
+        method: 'createPassword',
+        params: [arg.url, arg.password]
     }))
 })
 
 ipcMain.on('remove-password', (event, arg) => {
     event.reply('remove-password-response', entrypoint({
-        methodName: 'deletePassword',
-        param1: arg.id
+        method: 'deletePassword',
+        params: [arg.id]
     }))
 })

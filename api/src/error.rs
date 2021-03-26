@@ -16,6 +16,12 @@ pub(crate) enum FailureKind {
     Unknown(String),
 }
 
+impl From<serde_json::Error> for FailureKind {
+    fn from(err: serde_json::Error) -> Self {
+        Self::InvalidData(err.to_string())
+    }
+}
+
 impl From<rusqlite::Error> for FailureKind {
     fn from(err: rusqlite::Error) -> Self {
         Self::SqliteError(err.to_string())
