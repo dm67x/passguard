@@ -16,7 +16,7 @@ const AddNewPasswordDialog = (props) => {
     useEffect(() => {
         ipcRenderer.on('add-password-response', (_, arg) => {
             if (arg?.error) {
-                setError("cannot create the password")
+                setError(arg?.message.InvalidData)
             } else {
                 setOpen(false)
                 onClose()

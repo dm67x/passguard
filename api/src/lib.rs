@@ -67,7 +67,7 @@ fn _entrypoint(params: Parameters) -> Result<serde_json::Value, FailureKind> {
             let password = params.get(1).if_none("Password required")?.as_str();
             signin(username, password)
         }
-        "signout" => Ok(signout()),
+        "signout" => signout(),
         "createUser" => {
             let username = params.get(0).if_none("Username required")?.as_str();
             let password = params.get(1).if_none("Password required")?.as_str();
@@ -118,23 +118,28 @@ fn get_user_by_session() -> Option<User> {
 fn signin(name: &str, password: &str) -> Result<serde_json::Value, FailureKind> {
     set_session(None);
     let user = User::find_by(name)?;
-    if user.password == encrypt::hash(password) {
-        set_session(Some(user.username));
-        Ok(json!(true))
+    if user.password == encrypt::hash(password)? {
+        set_session(Some(user.username.clone()));
+        Ok(json!({ "username": user.username }))
     } else {
-        Ok(json!(false))
+        Err(FailureKind::NotAuthorized)
     }
 }
 
-fn signout() -> serde_json::Value {
-    set_session(None);
-    json!(true)
+fn signout() -> Result<serde_json::Value, FailureKind> {
+    match get_user_by_session() {
+        Some(_) => {
+            set_session(None);
+            Ok(json!(true))
+        }
+        None => Err(FailureKind::NotAuthorized),
+    }
 }
 
 fn create_user(username: &str, password: &str) -> Result<serde_json::Value, FailureKind> {
-    let user = User::new(username, encrypt::hash(password).as_str()).save()?;
+    let user = User::new(username, encrypt::hash(password)?.as_str()).save()?;
     set_session(Some(user.username.clone()));
-    Ok(json!(user))
+    Ok(json!({ "username": user.username }))
 }
 
 fn delete_user(username: &str) -> Result<serde_json::Value, FailureKind> {
@@ -147,10 +152,17 @@ fn delete_user(username: &str) -> Result<serde_json::Value, FailureKind> {
 fn create_password(url: &str, password: &str) -> Result<serde_json::Value, FailureKind> {
     match get_user_by_session() {
         Some(ref user) => {
-            let encrypted_password = encrypt::encrypt(user, password);
-            Ok(json!(Password::new(user, url, encrypted_password.as_str())
+            let encrypted_password = encrypt::encrypt(user, password)?;
+            if Password::new(user, url, encrypted_password.as_str())
                 .save()
-                .is_ok()))
+                .is_err()
+            {
+                Err(FailureKind::InvalidData(
+                    "Cannot create the password".to_string(),
+                ))
+            } else {
+                Ok(json!(true))
+            }
         }
         None => Err(FailureKind::NotAuthorized),
     }

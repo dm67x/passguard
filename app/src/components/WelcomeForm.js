@@ -1,25 +1,30 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import TextField from '@material-ui/core/TextField'
 import { Grid, Button, ButtonGroup, Paper } from '@material-ui/core'
 import { ipcRenderer } from 'electron'
 import { useHistory } from 'react-router-dom'
 import logo from '../images/icon.png'
+import MainContext from './MainContext'
 
 const WelcomeForm = () => {
+    const context = useContext(MainContext)
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState(false)
     let history = useHistory()
 
+    const signinup = (arg) => {
+        if (arg?.error) {
+            setError(true)
+        } else {
+            context.username = arg.username
+            history.push('/passwords')
+        }
+    }
+
     useEffect(() => {
-        ipcRenderer.on('signin-response', (_, arg) => {
-            arg?.error ? setError(true) : history.push('/passwords')
-        })
-
-        ipcRenderer.on('signup-response', (_, arg) => {
-            arg?.error ? setError(true) : history.push('/passwords')
-        })
-
+        ipcRenderer.on('signin-response', (_, arg) => signinup(arg))
+        ipcRenderer.on('signup-response', (_, arg) => signinup(arg))
         return () => {
             ipcRenderer.removeAllListeners('signin-response')
             ipcRenderer.removeAllListeners('signup-response')
