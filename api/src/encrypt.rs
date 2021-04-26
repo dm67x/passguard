@@ -9,14 +9,12 @@ pub(crate) fn encrypt(user: &User, password: &str) -> Result<String, FailureKind
             "Password cannot be empty".to_string(),
         ))
     } else {
-        let mc = new_magic_crypt!(&user.username.as_str(), 256);
-        Ok(mc.encrypt_bytes_to_base64(password))
+        Ok(new_magic_crypt!(&user.username.as_str(), 256).encrypt_bytes_to_base64(password))
     }
 }
 
 pub(crate) fn decrypt(user: &User, password: &str) -> Result<String, FailureKind> {
-    let mc = new_magic_crypt!(&user.username.as_str(), 256);
-    Ok(mc.decrypt_base64_to_string(password)?)
+    Ok(new_magic_crypt!(&user.username.as_str(), 256).decrypt_base64_to_string(password)?)
 }
 
 pub(crate) fn hash(password: &str) -> Result<String, FailureKind> {
