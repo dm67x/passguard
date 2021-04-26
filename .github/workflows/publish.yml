@@ -1,0 +1,50 @@
+name: Publish
+
+on:
+  push: 
+    branches: [main]
+    tags: 
+      - "v*.*.*"
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  publish:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    name: Publish on ${{ matrix.os }}
+    - uses: actions/checkout@v2
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2.1.5
+      - name: Package app
+        working-directory: app
+        run: |
+          yarn
+          yarn package
+      - name: Move to the valid directory
+        working-directory: app
+        run: |
+          mkdir ../passguard-${{ matrix.os }}
+          mv -r out/Passguard* ../passguard-${{ matrix.os }}
+      - name: Build api
+        working-directory: api
+        run: |
+          cargo build --release
+          mv target/release/*.dll ../passguard-${{ matrix.os }}
+          mv target/release/*.dylib ../passguard-${{ matrix.os }}
+          mv target/release/*.so ../passguard-${{ matrix.os }}
+      - name: Archive
+        uses: thedoctor0/zip-release@master
+        with:
+          path: passguard-${{ matrix.os }}
+          filename: '${{ matrix.os }}.zip'
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: '${{ matrix.os }}.zip'^
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
