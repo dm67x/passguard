@@ -28,7 +28,7 @@ jobs:
         working-directory: app
         run: |
           mkdir ../passguard-${{ matrix.os }}
-          mv -r out/Passguard* ../passguard-${{ matrix.os }}
+          mv out/Passguard* ../passguard-${{ matrix.os }}
       - name: Build api
         working-directory: api
         run: |
