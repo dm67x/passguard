@@ -31,11 +31,11 @@ jobs:
           mv out/Passguard* ../passguard-${{ matrix.os }}
       - name: Build api
         working-directory: api
-        run: |
-          cargo build --release
-          mv target/release/*.dll ../passguard-${{ matrix.os }}
-          mv target/release/*.dylib ../passguard-${{ matrix.os }}
-          mv target/release/*.so ../passguard-${{ matrix.os }}
+        run: cargo build --release
+      - name: Move library
+        working-directory: api
+        run: 
+          mv target/release/(*.dll,*.dylib,*.so) ../passguard-${{ matrix.os }}
       - name: Archive
         uses: thedoctor0/zip-release@master
         with:
