@@ -21,4 +21,4 @@ jobs:
         working-directory: app
         run: |
           yarn
-          yarn make
+          yarn package
