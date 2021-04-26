@@ -28,4 +28,4 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         working-directory: api
-        run: cargo build --release
+        run: cargo build --release --verbose
