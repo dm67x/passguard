@@ -44,6 +44,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: '${{ matrix.os }}.zip'^
+          files: '${{ matrix.os }}.zip'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
